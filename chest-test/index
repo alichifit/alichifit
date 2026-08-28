@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تست تحلیل برنامه سینه | امیر علی چی (ALICHIFIT)</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;800;900&display=swap");
+  :root {
+    --navy:#06101e; --navy-light:#0d1e38; --navy-card:#0a1830;
+    --cyan:#00c8e0; --cyan-dim:rgba(0,200,224,0.18);
+    --text:#f0f8ff; --text-dim:rgba(240,248,255,0.55);
+    --red:#ff4d6d; --green:#00e06a; --yellow:#ffc947;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Vazirmatn',sans-serif;font-weight:700;
+    background:var(--navy);color:var(--text);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;top:-25%;left:50%;transform:translateX(-50%);
+    width:800px;height:800px;
+    background:radial-gradient(circle,rgba(0,200,224,0.07) 0%,transparent 70%);
+    pointer-events:none;animation:pulse-bg 5s ease-in-out infinite;
+  }
+  @keyframes pulse-bg{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.1)}}
+  .grid-bg{
+    position:fixed;inset:0;
+    background-image:linear-gradient(rgba(0,200,224,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,224,0.025) 1px,transparent 1px);
+    background-size:60px 60px;pointer-events:none;
+  }
+  .container{
+    position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;
+    padding:32px 20px 52px;width:100%;max-width:440px;
+  }
+  .logo-wrap{margin-bottom:20px;display:flex;flex-direction:column;align-items:center;animation:logo-in .8s cubic-bezier(.34,1.56,.64,1) forwards;opacity:0}
+  @keyframes logo-in{from{opacity:0;transform:scale(.7) translateY(-16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .logo-img{width:82px;height:82px;border-radius:20px;filter:drop-shadow(0 0 22px rgba(0,200,224,0.45))}
+  .brand-name{margin-top:10px;font-size:14px;font-weight:900;color:var(--text-dim);animation:fade-in 1s ease .3s forwards;opacity:0}
+  @keyframes fade-in{to{opacity:1}}
+  .progress-wrap{width:100%;margin-bottom:22px;animation:fade-in .5s ease .4s forwards;opacity:0}
+  .progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:14px;color:var(--text-dim)}
+  .progress-info strong{color:var(--cyan);font-weight:900;font-size:15px}
+  .progress-bar-bg{height:5px;background:rgba(0,200,224,0.1);border-radius:3px}
+  .progress-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),#0099bb);transition:width .45s cubic-bezier(.4,0,.2,1);box-shadow:0 0 10px rgba(0,200,224,0.5)}
+  #screen-quiz{width:100%}
+  .question-card{background:var(--navy-card);border:1.5px solid var(--cyan-dim);border-radius:20px;padding:26px 22px 20px;margin-bottom:14px}
+  .question-num{font-size:13px;font-weight:900;color:var(--cyan);letter-spacing:1.5px;margin-bottom:12px}
+  .question-text{font-size:19px;font-weight:900;line-height:1.8;color:var(--text)}
+  .options-list{display:flex;flex-direction:column;gap:11px;margin-top:22px}
+  .option-btn{
+    width:100%;padding:16px 18px;background:var(--navy-light);
+    border:1.5px solid rgba(0,200,224,0.15);border-radius:13px;
+    font-family:'Vazirmatn',sans-serif;font-size:16px;font-weight:700;
+    color:var(--text);cursor:pointer;text-align:right;
+    transition:all .18s ease;direction:rtl;line-height:1.5;
+  }
+  .option-btn:hover{border-color:rgba(0,200,224,0.45);background:rgba(0,200,224,0.06);transform:translateX(-2px)}
+  .option-btn.selected{border-color:var(--cyan);background:rgba(0,200,224,0.1);box-shadow:0 0 0 1.5px rgba(0,200,224,0.25);color:#fff}
+  .nav-row{display:flex;gap:10px;margin-top:4px}
+  .btn-next{
+    flex:1;padding:17px;background:linear-gradient(135deg,var(--cyan),#0099bb);
+    border:none;border-radius:13px;font-family:'Vazirmatn',sans-serif;
+    font-size:18px;font-weight:900;color:var(--navy);cursor:pointer;
+    box-shadow:0 4px 22px rgba(0,200,224,0.28);transition:all .2s;
+    opacity:.35;pointer-events:none;
+  }
+  .btn-next.active{opacity:1;pointer-events:auto}
+  .btn-next.active:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,200,224,0.42)}
+  .btn-back{
+    padding:17px 20px;background:var(--navy-light);border:1.5px solid rgba(0,200,224,0.15);
+    border-radius:13px;font-family:'Vazirmatn',sans-serif;font-size:16px;font-weight:900;
+    color:var(--text-dim);cursor:pointer;transition:all .2s;
+  }
+  .btn-back:hover{border-color:rgba(0,200,224,0.4);color:var(--text)}
+  #screen-loading,#screen-analyzing{display:none;flex-direction:column;align-items:center;gap:18px}
+  .loader-ring{
+    width:56px;height:56px;border:2.5px solid rgba(0,200,224,0.1);
+    border-top:2.5px solid var(--cyan);border-radius:50%;
+    animation:spin .85s linear infinite;filter:drop-shadow(0 0 10px rgba(0,200,224,0.55));
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:18px;font-weight:800;color:var(--text-dim);text-align:center;line-height:1.7}
+  .loading-sub{font-size:14px;font-weight:700;color:var(--text-dim);text-align:center;line-height:1.7;animation:pulse-txt 2s ease-in-out infinite}
+  @keyframes pulse-txt{0%,100%{opacity:.5}50%{opacity:1}}
+  .analyze-steps{width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px}
+  .step-row{
+    display:flex;align-items:center;gap:12px;padding:13px 16px;
+    background:var(--navy-card);border:1px solid var(--cyan-dim);border-radius:12px;
+    font-size:15px;font-weight:700;color:var(--text-dim);
+    opacity:0;transition:opacity .4s,color .4s;
+  }
+  .step-row.active{opacity:1;color:var(--text)}
+  .step-dot{width:10px;height:10px;border-radius:50%;background:rgba(0,200,224,0.2);flex-shrink:0;transition:background .4s}
+  .step-row.active .step-dot{background:var(--cyan);box-shadow:0 0 8px rgba(0,200,224,0.6)}
+  .step-row.done{opacity:1;color:var(--green)}
+  .step-row.done .step-dot{background:var(--green)}
+  #screen-form{display:none;flex-direction:column;align-items:center;gap:16px;width:100%}
+  .form-badge{font-size:48px;animation:bounce-in .5s cubic-bezier(.34,1.56,.64,1) forwards}
+  @keyframes bounce-in{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .form-card{width:100%;background:var(--navy-card);border:1.5px solid var(--cyan-dim);border-radius:20px;padding:24px 20px;text-align:center}
+  .form-card-title{font-size:21px;font-weight:900;color:var(--text);line-height:1.75;margin-bottom:10px}
+  .form-card-title span{color:var(--cyan)}
+  .form-card-sub{font-size:15px;color:var(--text-dim);line-height:1.8}
+  .divider{width:40px;height:2.5px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin:0 auto}
+  .input-wrap{width:100%}
+  .input-wrap input,.input-wrap select{
+    width:100%;padding:16px 17px;background:var(--navy-light);
+    border:1.5px solid rgba(0,200,224,0.18);border-radius:14px;
+    font-family:'Vazirmatn',sans-serif;font-size:16px;font-weight:700;
+    color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;direction:rtl;
+  }
+  .input-wrap select{appearance:none;cursor:pointer;color-scheme:dark}
+  .input-wrap input::placeholder{color:var(--text-dim);font-weight:700}
+  .input-wrap input:focus,.input-wrap select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,200,224,0.12)}
+  .input-wrap input.error,.input-wrap select.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,77,109,0.1)}
+  .phone-row{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;direction:ltr}
+  .phone-row select,.phone-row input{direction:ltr;text-align:left}
+  .field-hint{color:var(--text-dim);font-size:13px;font-weight:700;margin-top:7px;text-align:right}
+  .error-msg{color:var(--red);font-size:13px;font-weight:700;margin-top:7px;display:none;text-align:right}
+  .btn-primary{
+    width:100%;padding:18px 24px;border:none;border-radius:14px;
+    font-family:'Vazirmatn',sans-serif;font-size:18px;font-weight:900;cursor:pointer;
+    background:linear-gradient(135deg,var(--cyan),#0099bb);color:var(--navy);
+    box-shadow:0 4px 24px rgba(0,200,224,0.3);transition:all .2s;
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,200,224,0.45)}
+  #screen-result{display:none;flex-direction:column;align-items:center;gap:0;width:100%}
+  .result-header{text-align:center;margin-bottom:20px;width:100%}
+  .result-badge{font-size:56px;display:block;margin-bottom:8px}
+  .result-score-box{
+    background:var(--navy-card);border:1.5px solid var(--cyan-dim);border-radius:16px;
+    padding:18px 20px;text-align:center;margin-bottom:6px;width:100%;
+  }
+  .result-score-num{font-size:42px;font-weight:900;color:var(--cyan);line-height:1;direction:ltr;unicode-bidi:plaintext}
+  .result-score-label{font-size:14px;color:var(--text-dim);margin-top:4px}
+  .result-summary-text{font-size:16px;font-weight:800;color:var(--text);line-height:1.8;text-align:center;margin-bottom:0;padding:0 4px}
+  .analysis-cards{width:100%;display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+  .analysis-card{background:var(--navy-card);border:1.5px solid var(--cyan-dim);border-radius:16px;padding:18px}
+  .analysis-card.bad{border-color:rgba(255,77,109,.35)}
+  .analysis-card.good{border-color:rgba(0,224,106,.3)}
+  .analysis-card.warn{border-color:rgba(255,201,71,.3)}
+  .ac-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+  .ac-icon{font-size:17px;flex-shrink:0;margin-top:2px}
+  .ac-title{font-size:14px;font-weight:900;line-height:1.6}
+  .ac-title.bad{color:var(--red)} .ac-title.good{color:var(--green)} .ac-title.warn{color:var(--yellow)}
+  .ac-answer{font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:8px;padding:7px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border-right:2px solid var(--cyan)}
+  .ac-body{font-size:14px;font-weight:700;color:var(--text-dim);line-height:1.8}
+  .cta-bottom-card{
+    width:100%;background:var(--navy-card);border:1.5px solid var(--cyan-dim);
+    border-radius:16px;padding:20px;text-align:center;margin-bottom:14px;
+  }
+  .cta-bottom-title{font-size:19px;font-weight:900;color:var(--text);line-height:1.75;margin-bottom:8px}
+  .cta-bottom-title span{color:var(--cyan)}
+  .cta-bottom-sub{font-size:14px;color:var(--text-dim);line-height:1.8}
+  #screen-fallback{display:none;flex-direction:column;align-items:center;gap:16px;width:100%;text-align:center}
+  .fallback-title{font-size:22px;font-weight:900;color:var(--text);line-height:1.7}
+  .fallback-sub{font-size:15px;color:var(--text-dim);line-height:1.8}
+  .btn-group{display:flex;flex-direction:column;gap:12px;width:100%}
+  #screen-redirect{display:none;flex-direction:column;align-items:center;gap:20px;text-align:center;padding:40px 0}
+  .redirect-icon{width:80px;height:80px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:36px;animation:bounce-in .5s cubic-bezier(.34,1.56,.64,1) forwards}
+  .redirect-icon.telegram{background:linear-gradient(135deg,#2AABEE,#229ED9);box-shadow:0 8px 28px rgba(42,171,238,0.45)}
+  .redirect-icon.whatsapp{background:linear-gradient(135deg,#25D366,#128C7E);box-shadow:0 8px 28px rgba(37,211,102,0.45)}
+  .redirect-text{font-size:20px;font-weight:900;color:var(--text)}
+  .redirect-sub{font-size:15px;color:var(--text-dim)}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="container">
+
+  <div class="logo-wrap">
+    <img class="logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQACAIAAADwf7zUAAAx/mNhQlgAADH+anVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNjMnBhAAAAMdhqdW1iAAAAR2p1bWRjMm1hABEAEIAAAKoAOJtxA3Vybjp1dWlkOjYyZjIxMWE5LTEyYTAtNDM3YS04ZDQwLWEzMTY5NmRjYmQ3NgAAAAMJanVtYgAAAClqdW1kYzJhcwARABCAAACqADibcQNjMnBhLmFzc2VydGlvbnMAAAAB02p1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5oYXNoLmJveGVzAAAAABhjMnNoSUBPPY6Dbp2LKSjHBdEjigAAAYpjYm9yomNhbGdmc2hhMjU2ZWJveGVzh6NlbmFtZXOBZFBOR2hkaGFzaFggTEtqO+ExSrhhOL70MU3eAi5gCWDYaJosj4YxgC0g2rZjcGFkQKNlbmFtZXOBZElIRFJkaGFzaFggREg4VYFyDF/4I5ktl92mVC7BaO5GN7sT8FHCQXu2L0tjcGFkQKNlbmFtZXOBZEMyUEFkaGFzaEEAY3BhZECjZW5hbWVzgWRJREFUZGhhc2hYILycS4Ql2WgIHmwnq53KMkUAJbF4J4vvsrPADSe93bkrY3BhZECjZW5hbWVzgWRJREFUZGhhc2hYIAXDueoDb44qZZgolPlSm/Gwe33vTLtFQKR7N6/MxbJSY3BhZECjZW5hbWVzgWRJREFUZGhhc2hYIJp2iKI3kHykPaxYKRXgarPA4xiNPwtUsaLgvuURYD8SY3BhZECjZW5hbWVzgWRJRU5EZGhhc2hYIIGecu8AUGdrhhYLb70LObR/uxOo4Q5pwpnL4a2EjSPfY3BhZEAAAAEFanVtYgAAAD5qdW1kY2JvcgARABCAAACqADibcRNjMnBhLmFjdGlvbnMAAAAAGGMyc2hJQE89joNunYspKMcF0SOKAAAAv2Nib3KhZ2FjdGlvbnOBpGZhY3Rpb25sYzJwYS5jcmVhdGVkbXNvZnR3YXJlQWdlbnR1QXp1cmUgT3BlbkFJIEltYWdlR2VuZHdoZW50MjAyNi0wMi0xNVQyMDozMDozMlpxZGlnaXRhbFNvdXJjZVR5cGV4Rmh0dHA6Ly9jdi5pcHRjLm9yZy9uZXdzY29kZXMvZGlnaXRhbHNvdXJjZXR5cGUvdHJhaW5lZEFsZ29yaXRobWljTWVkaWEAAAJxanVtYgAAACRqdW1kYzJjbAARABCAAACqADibcQNjMnBhLmNsYWltAAAAAkVjYm9yp2NhbGdmc2hhMjU2aWRjOmZvcm1hdGlpbWFnZS9wbmdpc2lnbmF0dXJleExzZWxmI2p1bWJmPWMycGEvdXJuOnV1aWQ6NjJmMjExYTktMTJhMC00MzdhLThkNDAtYTMxNjk2ZGNiZDc2L2MycGEuc2lnbmF0dXJlamluc3RhbmNlSURjMS4wb2NsYWltX2dlbmVyYXRvcngcTWljcm9zb2Z0X1Jlc3BvbnNpYmxlX0FJLzEuMHRjbGFpbV9nZW5lcmF0b3JfaW5mb4GiZG5hbWV4KU1pY3Jvc29mdCBSZXNwb25zaWJsZSBBSSBJbWFnZSBQcm92ZW5hbmNlZ3ZlcnNpb25jMS4wamFzc2VydGlvbnOCo2NhbGdmc2hhMjU2Y3VybHhdc2VsZiNqdW1iZj1jMnBhL3Vybjp1dWlkOjYyZjIxMWE5LTEyYTAtNDM3YS04ZDQwLWEzMTY5NmRjYmQ3Ni9jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmJveGVzZGhhc2hYIM9en5Owo0Y3vLgkkuWLQgyZnjTi/UpPdHrZrmYzQZTwo2NhbGdmc2hhMjU2Y3VybHhac2VsZiNqdW1iZj1jMnBhL3Vybjp1dWlkOjYyZjIxMWE5LTEyYTAtNDM3YS04ZDQwLWEzMTY5NmRjYmQ3Ni9jMnBhLmFzc2VydGlvbnMvYzJwYS5hY3Rpb25zZGhhc2hYIPucjLppOVcMGpzbdLOtgv+A7ME85PI6FV2dYN10hktLAAAsD2p1bWIAAAAoanVtZGMyY3MAEQAQgAAAqgA4m3EDYzJwYS5zaWduYXR1cmUAAAAr32Nib3LShEShATgkomd4NWNoYWlug1kGKTCCBiUwggQNoAMCAQICEzMAAAB+JCzZntPvltIAAAAAAH4wDQYJKoZIhvcNAQEMBQAwVjELMAkGA1UEBhMCVVMxHjAcBgNVBAoTFU1pY3Jvc29mdCBDb3Jwb3JhdGlvbjEnMCUGA1UEAxMeTWljcm9zb2Z0IFNDRCBDbGFpbWFudHMgUlNBIENBMB4XDTI1MTAwMTE3NDQwMVoXDTI2MTAwMTE3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" alt="امیر علی چی (ALICHIFIT)" onerror="this.style.display='none'">
+    <div class="brand-name">امیر علی چی (ALICHIFIT)</div>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-info">
+      <span>سوال <strong id="q-num">1</strong> از <strong id="q-total">10</strong></span>
+      <span id="q-pct">10%</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progress-fill" style="width:10%"></div>
+    </div>
+  </div>
+
+  <div id="screen-quiz">
+    <div class="question-card">
+      <div class="question-num" id="q-label">سوال ۱</div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options-list" id="q-options"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn-back" id="btn-back" onclick="prevQ()" style="display:none">← قبلی</button>
+      <button class="btn-next" id="btn-next" onclick="nextQ()">بعدی ←</button>
+    </div>
+  </div>
+
+  <div id="screen-analyzing">
+    <div class="loader-ring"></div>
+    <div class="loading-text">در حال تحلیل جواب‌ها و برنامه‌ات...</div>
+    <div class="loading-sub" id="analyze-sub">لطفاً صبر کن</div>
+    <div class="analyze-steps">
+      <div class="step-row" id="step-1"><div class="step-dot"></div><span>بررسی فرکانس تمرینی</span></div>
+      <div class="step-row" id="step-2"><div class="step-dot"></div><span>تحلیل حجم ست‌ها</span></div>
+      <div class="step-row" id="step-3"><div class="step-dot"></div><span>ارزیابی ترتیب و انتخاب حرکات</span></div>
+      <div class="step-row" id="step-4"><div class="step-dot"></div><span>بررسی رنج تکرار و استراحت</span></div>
+      <div class="step-row" id="step-5"><div class="step-dot"></div><span>آماده‌سازی نتایج</span></div>
+    </div>
+  </div>
+
+  <div id="screen-form">
+    <div class="form-badge">✅</div>
+    <div class="form-card">
+      <div class="form-card-title">نتیجه تحلیل <span>آماده شد!</span></div>
+      <div class="divider" style="margin-bottom:12px;"></div>
+      <div class="form-card-sub">
+        اسم و شمارتو وارد کن تا نتیجه رو <strong style="color:var(--text)">شخصی‌سازی کنم واست</strong>
+      </div>
+    </div>
+    <div class="input-wrap">
+      <input type="text" id="input-name" placeholder="نام و نام خانوادگی" autocomplete="off" />
+      <div class="error-msg" id="err-name">نام رو وارد کن</div>
+    </div>
+    <div class="field-hint" style="text-align:right;margin-top:-6px;">🌍 اگه خارج از ایران هستی، کد کشورت رو از لیست پایین تغییر بده</div>
+    <div class="input-wrap">
+      <div class="phone-row">
+        <select id="input-country">
+          <option value="IR" selected>🇮🇷 ایران +98</option>
+          <option value="AF">🇦🇫 افغانستان +93</option>
+          <option value="TR">🇹🇷 ترکیه +90</option>
+          <option value="AE">🇦🇪 امارات +971</option>
+          <option value="IQ">🇮🇶 عراق +964</option>
+          <option value="US">🇺🇸 آمریکا +1</option>
+          <option value="CA">🇨🇦 کانادا +1</option>
+          <option value="GB">🇬🇧 انگلستان +44</option>
+          <option value="DE">🇩🇪 آلمان +49</option>
+          <option value="FR">🇫🇷 فرانسه +33</option>
+          <option value="NL">🇳🇱 هلند +31</option>
+          <option value="SE">🇸🇪 سوئد +46</option>
+          <option value="AU">🇦🇺 استرالیا +61</option>
+          <option value="OTHER">🌍 کشور دیگر</option>
+        </select>
+        <input type="tel" id="input-phone" placeholder="9123456789" autocomplete="tel" inputmode="tel" dir="ltr" />
+      </div>
+      <div class="error-msg" id="err-phone">شماره معتبر وارد کن</div>
+      <div class="field-hint" id="phone-hint">شماره را بدون صفر اول وارد کن.</div>
+    </div>
+    <button class="btn-primary" onclick="handleSubmit()">دریافت نتیجه ←</button>
+  </div>
+
+  <div id="screen-loading">
+    <div class="loader-ring"></div>
+    <div class="loading-text">در حال ثبت اطلاعات...</div>
+  </div>
+
+  <div id="screen-result">
+    <div class="result-header">
+      <div class="result-score-box">
+        <div class="result-score-num" id="result-score-num"></div>
+        <div class="result-score-label">امتیاز برنامه‌ات از 10</div>
+      </div>
+      <br>
+      <div class="result-summary-text" id="result-summary"></div>
+    </div>
+    <div class="divider" style="margin:0 auto 22px;"></div>
+    <div class="analysis-cards" id="analysis-cards"></div>
+    <div class="cta-bottom-card">
+      <div class="cta-bottom-title">میخوای <span>برنامه‌ریزیت</span> رو انجام بدم؟</div>
+      <div class="cta-bottom-sub">اگه می‌خوای یه برنامه دقیق و علمی داشته باشی، برای اطلاع از شرایط، بهم پیام بده.</div>
+    </div>
+    <button class="btn-primary" onclick="sendMessage()" style="width:100%">📲 بهم پیام بده ←</button>
+  </div>
+
+  <div id="screen-fallback">
+    <div class="fallback-title">کجا زندگی می‌کنی؟</div>
+    <div class="divider" style="margin:0 auto;"></div>
+    <div class="fallback-sub">انتخاب کن تا بهترین راه ارتباطی رو برات باز کنم</div>
+    <div class="btn-group">
+      <button class="btn-primary" onclick="goTo('telegram')">📍 داخل ایران — تلگرام</button>
+      <button class="btn-primary btn-abroad" onclick="goTo('whatsapp')">✈️ خارج از ایران — واتساپ</button>
+    </div>
+  </div>
+
+  <div id="screen-redirect">
+    <div class="redirect-icon" id="redirect-icon"></div>
+    <div class="redirect-text" id="redirect-text"></div>
+    <div class="redirect-sub" id="redirect-sub"></div>
+  </div>
+
+</div>
+
+<script>
+// ==========================================
+// تنظیمات اصلی فرم
+// ==========================================
+const FORM_NAME = "Chest_test"; // 👈 نام تب شیت برای تست سینه
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxphxAZRvzk_hZ7_lNYudvlzHdLgHc4ZIHAY0zdcHHyKabVS9vao6Oj6Gdd3wLcq9FePQ/exec"; // لینک اسکریپت جدید
+const WHATSAPP  = "https://wa.me/989140710711?text=%D8%B3%D9%84%D8%A7%D9%85+%D8%AC%D9%87%D8%AA+%D8%A8%D8%B1%D9%86%D8%A7%D9%85%D9%87+%D8%B1%DB%8C%D8%B2%DB%8C+%D9%BE%DB%8C%D8%A7%D9%85+%D9%85%DB%8C%D8%AF%D9%85"; // شماره واتساپ جدید
+
+// استخراج سورس از لینک 
+const urlParams = new URLSearchParams(window.location.search);
+const SOURCE_LABEL = urlParams.get('source') || urlParams.get('utm_source') || "بدون تگ / ارگانیک";
+
+// تابع هدایت به تلگرام (ارسال مستقیم به یک آیدی ثابت بدون شیفت‌بندی)
+function getTelegramSupport() {
+  return {
+    url: "https://t.me/ALICHIFIT",
+    accountName: "ALICHIFIT"
+  };
+}
+
+const QUESTIONS = [
+  {
+    q:"هفته‌ای چند بار سینه‌تو تمرین می‌دی؟",
+    opts:["یک بار","دو بار","سه بار یا بیشتر"],
+    scores:[0,2,2],
+    info:[
+      {ok:false,text:"بیشتر افراد هر عضله رو فقط یکبار تو هفته تمرین می‌دن و توی اون جلسه پدرشو درمیارن. این اشتباهه. اگه همون حجم رو توی دو جلسه پخش کنی، عضله بیشتر رشد می‌کنه. سیگنال‌های رشد بعد از ۴۸ ساعت تموم میشن و باید دوباره تحریک بشن."},
+      {ok:true, text:"ایده‌آله. حجم رو درست پخش کردی و سیگنال رشد رو دو بار در هفته به عضله می‌دی."},
+      {ok:true, text:"اگه حجم تمرینی (تعداد ست‌ها) رو بین جلسات پخش کردی عالیه، ولی اگه هر جلسه تعداد ست زیادی می‌زنی مراقب ریکاوری باش."}
+    ]
+  },
+  {
+    q:"مجموعاً چند ست در هفته سینه می‌زنی؟",
+    opts:["کمتر از ۸ ست","۸ تا ۱۲ ست","۱۲ تا ۲۰ ست","بیشتر از ۲۰ ست"],
+    scores:[0,1,2,0],
+    info:[
+      {ok:false,text:"حجم تمرینیت برای حفظ عضله خوبه ولی برای رشد کافی نیست."},
+      {ok:null, text:"اگه سابقه زیر ۳ ماه داری اوکیه، ولی اگه بیشتر تمرین می‌کنی می‌تونی بین ۱۲ تا ۲۰ ست بزنی."},
+      {ok:true, text:"رنج مناسبیه. بدنت محرک کافی برای رشد داره."},
+      {ok:false,text:"اگه ورزشکار حرفه‌ای نیستی احتمالاً بدنت نمی‌تونه این حجم رو ریکاوری کنه و جلوی رشدتو می‌گیره."}
+    ]
+  },
+  {
+    q:"سینه‌تو کِی تمرین می‌دی؟",
+    opts:["اول جلسه","وسط جلسه","آخر جلسه"],
+    scores:[2,1,0],
+    info:[
+      {ok:true, text:"درسته. اگه اولویتت رشد سینه‌ست، باید اول برنامت تمرینش بدی چون بیشترین انرژی و تمرکز رو داری."},
+      {ok:null, text:"بد نیست ولی اگه اولویتت رشد سینه‌ست، باید اول برنامت تمرینش بدی چون بیشترین انرژی و تمرکز رو داری."},
+      {ok:false,text:"اگه اولویتت رشد سینه‌ست، باید اول برنامت تمرینش بدی چون بیشترین انرژی و تمرکز رو داری."}
+    ]
+  },
+  {
+    q:"کدوم قسمت‌های سینه‌تو تمرین می‌دی؟",
+    opts:["بالاسینه","سینه","زیرسینه","هر سه"],
+    scores:[1,1,1,2],
+    info:[
+      {ok:null, text:"برای یه سینه کامل باید هر سه بخش، بالا، میان و زیرسینه‌تو به خوبی تمرین بدی."},
+      {ok:null, text:"برای یه سینه کامل باید هر سه بخش، بالا، میان و زیرسینه‌تو به خوبی تمرین بدی."},
+      {ok:null, text:"برای یه سینه کامل باید هر سه بخش، بالا، میان و زیرسینه‌تو به خوبی تمرین بدی."},
+      {ok:true, text:"عالیه. همه قسمت‌های سینه رو تمرین می‌دی."}
+    ]
+  },
+  {
+    q:"کدوم حرکات تو برنامه‌ات داری؟",
+    opts:["فقط حرکات پرسی (مثل: بالاسینه دمبل، سینه دمبل، زیرسینه دمبل)","فقط حرکات فلای (مثل: کراس داون، فلای دستگاه، کراس اور)","هر دو"],
+    scores:[1,1,2],
+    info:[
+      {ok:null, text:"حرکات فلای رو هم به برنامه‌ات اضافه کن که کشش و انقباض کامل‌تری به سینه بدی و قسمت داخلی بهتر درگیر بشه."},
+      {ok:null, text:"حرکات پرسی رو هم به برنامه‌ات اضافه کن که تنش مکانیکی بیشتری به سینه بدی و قدرت و حجم بهتری بسازی."},
+      {ok:true, text:"عالیه. هم تنش مکانیکی داری هم کشش و انقباض کامل. بیشترین محرک رشد رو به سینه می‌دی. هم قسمت خارجی و هم قسمت داخلی سینه‌ات به خوبی درگیر می‌شن."}
+    ]
+  },
+  {
+    q:"تکرارهات تو چه رنجی هستن؟",
+    opts:["کمتر از ۶ تکرار","۶ تا ۱۲ تکرار","بیشتر از ۱۲ تکرار","هر دو رنج (۶ تا ۱۲ و بالای ۱۲ تکرار)"],
+    scores:[0,1,1,2],
+    info:[
+      {ok:false,text:"برای افزایش قدرت خوبه ولی برای عضله‌سازی بهینه نیست. ما بدنسازیم نه پاورلیفتر."},
+      {ok:null, text:"بازه خوبیه ولی از رنج بالای ۱۲ تکرار هم استفاده کن تا استرس متابولیکی و سوزش بیشتری داشته باشی."},
+      {ok:null, text:"برای دم‌کردن و سوزش خوبه. ولی برای تنش مکانیکی از بازه ۶ تا ۱۲ هم استفاده کن."},
+      {ok:true, text:"هم تنش مکانیکی داری هم استرس متابولیکی. بیشترین محرک رشد رو به عضله می‌دی."}
+    ]
+  },
+  {
+    q:"بین ست‌هات چند دقیقه استراحت می‌کنی؟",
+    opts:["کمتر از ۱ دقیقه","۱ تا ۲ دقیقه","بیشتر از ۲ دقیقه"],
+    scores:[0,2,1],
+    info:[
+      {ok:false,text:"ریکاوری کافی نیست. ست بعدی با کیفیت پایین زده میشه و از تمرینت نهایت استفاده رو نمی‌کنی."},
+      {ok:true, text:"مناسبه. سینه توی این بازه ریکاور میشه و آماده ست بعدیه."},
+      {ok:null, text:"سینه بین ۱ تا ۲ دقیقه ریکاور میشه. وقتتو پرت نکن."}
+    ]
+  },
+  {
+    q:"موقع اجرای حرکات، سینه‌تو به خوبی حسش می‌کنی؟ یا زودتر سرشانه و پشت بازوت خسته می‌شن؟",
+    opts:["سرشانه و پشت بازوم زودتر خسته می‌شن","به خوبی حسش می‌کنم"],
+    scores:[0,2],
+    info:[
+      {ok:false,text:"ارتباط عصبی‌عضلانیت با سینه ضعیفه. عضلات کمکی کار اصلی رو می‌کنن و سینه محرک کافی نمی‌گیره. فرم اجرا و تکنیکت مشکل داره."},
+      {ok:true, text:"ارتباط عصبی‌عضلانیت با سینه خوبه. سینه درست درگیر میشه و از هر ست نهایت استفاده رو می‌کنی. فرم اجرا و تکنیک خوبی داری."}
+    ]
+  },
+  {
+    q:"کدوم قسمت سینه‌ات ضعیف‌تره؟",
+    opts:["خارجی","داخلی","هر دو قسمت ضعیفن"],
+    scores:[1,1,0],
+    info:[
+      {ok:null, text:"برای تقویت و ضعف‌گیری قسمت خارجی سینه، مطمئن شو حرکات پرسی رو توی برنامت داشته باشی و با دامنه حرکتی کامل و با کشش بیشتر اجرا کنی."},
+      {ok:null, text:"برای تقویت قسمت داخلی سینه، مطمئن شو حرکات فلای رو توی برنامت داشته باشی و با انقباض کامل و مکث دو ثانیه‌ای در انتها انجامشون بده. حرکاتی مثل کراس اور، فلای دستگاه، کراس داون."},
+      {ok:false,text:"مطمئن شو هر دو نوع حرکت رو برای سینه‌ات می‌زنی:\n۱. حرکات پرسی مثل پرس سینه دمبل\n۲. حرکات فلای مثل فلای دستگاه"}
+    ]
+  },
+  {
+    q:"چند وقته با همین برنامه تمرین می‌کنی؟",
+    opts:["کمتر از ۱ ماه","۱ تا ۳ ماه","بیشتر از ۳ ماه"],
+    scores:[2,0,0],
+    info:[
+      {ok:true, text:"خوبه. تا ۴ هفته همین برنامه رو ادامه بده، بعد تغییرش بده."},
+      {ok:false,text:"بدنت با این برنامه کاملاً سازگار شده و رشد متوقف شده. حتماً برنامه‌ات رو عوض کن."},
+      {ok:false,text:"بدنت با این برنامه کاملاً سازگار شده و رشد متوقف شده. حتماً برنامه‌ات رو عوض کن."}
+    ]
+  }
+];
+
+const TOTAL_Q = QUESTIONS.length;
+const MAX_SCORE = QUESTIONS.reduce((s,q)=>s+Math.max(...q.scores),0);
+
+function scoreTo10(raw){
+  return Math.round((raw / MAX_SCORE) * 10 * 10) / 10;
+}
+
+const SUMMARIES = [
+  {min:0,  max:3,  text:"برنامه‌ات مشکلات اساسی داره که مستقیماً جلوی رشد سینه‌تو گرفته."},
+  {min:4,  max:7,  text:"برنامت نقص‌هایی داره که می‌تونی برطرف کنی."},
+  {min:8,  max:10, text:"برنامه‌ات با علم روز مطابقه، ولی یه نکته مهم هست که اکثر کسایی که برنامه خوب دارن نادیده می‌گیرن."}
+];
+
+const FA=[" ","۱","۲","۳","۴","۵","۶","۷","۸","۹","۱۰"];
+let currentQ=0,answers=new Array(TOTAL_Q).fill(null),totalScore=0,score10=0,summaryData=null,userData={},locationDecision=null;
+
+function renderQ(){
+  const q=QUESTIONS[currentQ];
+  const pct=Math.round(((currentQ+1)/TOTAL_Q)*100);
+  document.getElementById("q-num").textContent=currentQ+1;
+  document.getElementById("q-pct").textContent=pct+"%";
+  document.getElementById("progress-fill").style.width=pct+"%";
+  document.getElementById("q-label").textContent="سوال "+FA[currentQ+1];
+  document.getElementById("q-text").textContent=q.q;
+  const list=document.getElementById("q-options");
+  list.innerHTML="";
+  q.opts.forEach((opt,i)=>{
+    const btn=document.createElement("button");
+    btn.className="option-btn"+(answers[currentQ]===i?" selected":"");
+    btn.textContent=opt;
+    btn.onclick=()=>selectOption(i);
+    list.appendChild(btn);
+  });
+  document.getElementById("btn-back").style.display=currentQ>0?"block":"none";
+  updateNextBtn();
+}
+
+function selectOption(idx){
+  answers[currentQ]=idx;
+  document.querySelectorAll(".option-btn").forEach((b,i)=>b.classList.toggle("selected",i===idx));
+  updateNextBtn();
+}
+
+function updateNextBtn(){
+  const btn=document.getElementById("btn-next");
+  const done=answers[currentQ]!==null;
+  const isLast=currentQ===TOTAL_Q-1;
+  btn.classList.toggle("active",done);
+  btn.textContent=isLast?"مشاهده نتیجه 🎯":"بعدی ←";
+}
+
+function nextQ(){
+  if(answers[currentQ]===null)return;
+  if(currentQ<TOTAL_Q-1){currentQ++;renderQ();}
+  else{startAnalyzing();}
+}
+
+function prevQ(){if(currentQ>0){currentQ--;renderQ();}}
+
+function startAnalyzing(){
+  document.getElementById("screen-quiz").style.display="none";
+  document.getElementById("progress-wrap").style.display="none";
+  document.getElementById("screen-analyzing").style.display="flex";
+  totalScore=answers.reduce((s,a,qi)=>s+(a!==null?QUESTIONS[qi].scores[a]:0),0);
+  score10=scoreTo10(totalScore);
+  summaryData=SUMMARIES.find(s=>score10>=s.min&&score10<=s.max)||SUMMARIES[1];
+  const steps=["step-1","step-2","step-3","step-4","step-5"];
+  const subs=["بررسی فرکانس تمرینی...","تحلیل حجم ست‌ها...","ارزیابی حرکات و ترتیب...","بررسی رنج تکرار و استراحت...","آماده‌سازی نتایج..."];
+  let i=0;
+  function tick(){
+    if(i>0){document.getElementById(steps[i-1]).classList.remove("active");document.getElementById(steps[i-1]).classList.add("done");}
+    if(i<steps.length){
+      document.getElementById(steps[i]).classList.add("active");
+      document.getElementById("analyze-sub").textContent=subs[i];
+      i++;setTimeout(tick,700);
+    }else{
+      setTimeout(()=>{
+        document.getElementById("screen-analyzing").style.display="none";
+        document.getElementById("screen-form").style.display="flex";
+      },500);
+    }
+  }
+  setTimeout(tick,400);
+}
+
+const PHONE_RULES={
+  IR:{dial:"98",min:10,max:10,mobile:/^9\d{9}$/,sample:"9123456789"},
+  AF:{dial:"93",min:9,max:9,mobile:/^7\d{8}$/,sample:"701234567"},
+  TR:{dial:"90",min:10,max:10,mobile:/^5\d{9}$/,sample:"5012345678"},
+  AE:{dial:"971",min:9,max:9,mobile:/^5\d{8}$/,sample:"501234567"},
+  IQ:{dial:"964",min:10,max:10,mobile:/^7\d{9}$/,sample:"7712345678"},
+  US:{dial:"1",min:10,max:10,mobile:/^[2-9]\d{9}$/,sample:"2025550123"},
+  CA:{dial:"1",min:10,max:10,mobile:/^[2-9]\d{9}$/,sample:"4165550123"},
+  GB:{dial:"44",min:10,max:10,mobile:/^7\d{9}$/,sample:"7123456789"},
+  DE:{dial:"49",min:10,max:11,mobile:/^1[5-7]\d{8,9}$/,sample:"15123456789"},
+  FR:{dial:"33",min:9,max:9,mobile:/^[67]\d{8}$/,sample:"612345678"},
+  NL:{dial:"31",min:9,max:9,mobile:/^6\d{8}$/,sample:"612345678"},
+  SE:{dial:"46",min:9,max:9,mobile:/^7\d{8}$/,sample:"701234567"},
+  AU:{dial:"61",min:9,max:9,mobile:/^4\d{8}$/,sample:"412345678"}
+};
+
+function toEN(v){return String(v||"").replace(/[۰-۹٠-٩]/g,d=>{const pi="۰۱۲۳۴۵۶۷۸۹".indexOf(d);return pi>-1?pi:"٠١٢٣٤٥٦٧٨٩".indexOf(d);});}
+function cleanPhone(v){return toEN(v).replace(/[^\d+]/g,"").replace(/(?!^)\+/g,"");}
+function stripDial(p,r){let d=p.replace(/^\+/,"");if(d.startsWith("00"))d=d.slice(2);if(d.startsWith(r.dial))d=d.slice(r.dial.length);if(d.startsWith("0"))d=d.slice(1);return d;}
+function validatePhone(raw,cc){
+  const cl=cleanPhone(raw);
+  if(!cl)return{valid:false,message:"شماره موبایل رو وارد کن"};
+  const rule=PHONE_RULES[cc];
+  if(!rule){const g=cl.replace(/^\+|^00/,"").replace(/^0+/,"");return /^\d{8,15}$/.test(g)?{valid:true,countryCode:"OTHER",national:g,e164:"+"+g,isIranPhone:g.startsWith("98")}:{valid:false,message:"شماره بین‌المللی معتبر وارد کن"};}
+  const nat=stripDial(cl,rule);
+  if(nat.length<rule.min||nat.length>rule.max||!rule.mobile.test(nat))return{valid:false,message:"شماره معتبر وارد کن؛ مثلاً: "+rule.sample};
+  return{valid:true,countryCode:cc,national:nat,e164:"+"+rule.dial+nat,isIranPhone:cc==="IR"};
+}
+
+function getTimezone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){return null}}
+function getBrowserRegion(){for(const l of(navigator.languages||[navigator.language||""])){const m=String(l).toUpperCase().match(/-([A-Z]{2})$/);if(m)return m[1];}return null;}
+function decide(pi){
+  const tz=getTimezone(),br=getBrowserRegion();
+  const tzIran=tz==="Asia/Tehran",tzAbroad=tz&&tz!=="Asia/Tehran";
+  const brAbroad=br&&br!=="IR"&&br!=="AF",brIran=br==="IR"&&tz==="Asia/Tehran";
+  if(!pi.isIranPhone)return{dest:"whatsapp",location:"خارج",segment:"foreign_abroad"};
+  if((tzAbroad||brAbroad)&&!tzIran&&!brIran)return{dest:"whatsapp",location:"ایرانی خارج",segment:"iranian_abroad"};
+  if(tzIran||brIran)return{dest:"telegram",location:"ایران",segment:"inside_iran"};
+  return{dest:"fallback",location:"نامشخص",segment:"unknown"};
+}
+
+// ارسال دیتا به اسکریپت داینامیک شیت
+function saveToSheet(payload){
+  try {
+    payload.formName = FORM_NAME;
+    fetch(SCRIPT_URL, {
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {}
+}
+
+function handleSubmit(){
+  const name=document.getElementById("input-name").value;
+  const phone=document.getElementById("input-phone").value;
+  const cc=document.getElementById("input-country").value;
+  const pi=validatePhone(phone,cc);
+  let valid=true;
+  
+  if(name.trim().length<2){document.getElementById("err-name").style.display="block";document.getElementById("input-name").classList.add("error");valid=false;}
+  else{document.getElementById("err-name").style.display="none";document.getElementById("input-name").classList.remove("error");}
+  
+  if(!pi.valid){document.getElementById("err-phone").textContent=pi.message;document.getElementById("err-phone").style.display="block";document.getElementById("input-phone").classList.add("error");document.getElementById("input-country").classList.add("error");valid=false;}
+  else{document.getElementById("err-phone").style.display="none";document.getElementById("input-phone").classList.remove("error");document.getElementById("input-country").classList.remove("error");}
+  
+  if(!valid)return;
+  
+  userData={name:name.trim(),phone:pi.e164,countryCode:pi.countryCode,phoneInfo:pi};
+  locationDecision=decide(pi);
+
+  // تعیین پشتیبان 
+  let finalUrl = "", supportName = "نامشخص";
+  if (locationDecision.dest === "telegram") {
+    const tgInfo = getTelegramSupport();
+    finalUrl = tgInfo.url;
+    supportName = "@" + tgInfo.accountName;
+  } else if (locationDecision.dest === "whatsapp") {
+    finalUrl = WHATSAPP;
+    supportName = "واتساپ (خارجی)";
+  }
+  locationDecision.finalUrl = finalUrl;
+  locationDecision.supportName = supportName;
+
+  // استخراج جواب‌های کاربر به تفکیک
+  let userAnswers = {};
+  QUESTIONS.forEach((q, i) => {
+    userAnswers[`سوال ${i+1}`] = q.opts[answers[i]];
+  });
+
+  // ثبت در گوگل شیت موقع مشاهده نتیجه
+  saveToSheet({
+    "نام": userData.name,
+    "شماره تماس": userData.phone,
+    "وضعیت": "مشاهده نتایج تست سینه",
+    "امتیاز از 10": score10,
+    "امتیاز خام": totalScore,
+    "منبع (Source)": SOURCE_LABEL,
+    "پشتیبان (مقصد)": supportName,
+    "موقعیت": locationDecision.location,
+    "سگمنت": locationDecision.segment,
+    ...userAnswers
+  });
+
+  document.getElementById("screen-form").style.display="none";
+  document.getElementById("screen-loading").style.display="flex";
+  setTimeout(()=>{
+    document.getElementById("screen-loading").style.display="none";
+    showResultScreen();
+  },900);
+}
+
+function showResultScreen(){
+  document.getElementById("result-score-num").textContent=score10+" / 10";
+  document.getElementById("result-summary").textContent=summaryData.text;
+  buildAnalysisCards();
+  document.getElementById("screen-result").style.display="flex";
+}
+
+function buildAnalysisCards(){
+  const container=document.getElementById("analysis-cards");
+  container.innerHTML="";
+  QUESTIONS.forEach((q,qi)=>{
+    const ai=answers[qi];if(ai===null)return;
+    const info=q.info[ai];const score=q.scores[ai];
+    const maxScore=Math.max(...q.scores);
+    let cls="warn",icon="⚠️",tcls="warn";
+    if(score>=maxScore&&maxScore>0){cls="good";icon="✅";tcls="good";}
+    else if(score===0){cls="bad";icon="❌";tcls="bad";}
+    const card=document.createElement("div");
+    card.className="analysis-card "+cls;
+    card.innerHTML=`
+      <div class="ac-header">
+        <span class="ac-icon">${icon}</span>
+        <span class="ac-title ${tcls}">${q.q}</span>
+      </div>
+      <div class="ac-answer">جواب تو: ${q.opts[ai]}</div>
+      <div class="ac-body">${info.text.replace(/\n/g,'<br>')}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function sendMessage(){
+  if(!locationDecision){locationDecision={dest:"fallback"};}
+  if(locationDecision.dest==="fallback"){
+    document.getElementById("screen-result").style.display="none";
+    document.getElementById("screen-fallback").style.display="flex";
+  }else{
+    // کاربر روی پیام کلیک کرده
+    saveToSheet({
+      "نام": userData.name,
+      "شماره تماس": userData.phone,
+      "وضعیت": "کلیک روی پیام به پشتیبان (اقدام)",
+      "پشتیبان (مقصد)": locationDecision.supportName
+    });
+    doRedirect(locationDecision.dest, locationDecision.finalUrl);
+  }
+}
+
+function goTo(dest){
+  document.getElementById("screen-fallback").style.display="none";
+  const loc=dest==="telegram"?"داخل ایران":"خارج از ایران";
+  
+  let finalUrl, supportName;
+  if (dest === "telegram") {
+    const tgInfo = getTelegramSupport();
+    finalUrl = tgInfo.url;
+    supportName = "@" + tgInfo.accountName;
+  } else {
+    finalUrl = WHATSAPP;
+    supportName = "واتساپ (خارجی)";
+  }
+
+  // ثبت اقدام کاربر به انتخاب دستی
+  saveToSheet({
+    "نام": userData.name,
+    "شماره تماس": userData.phone,
+    "وضعیت": "انتخاب دستی پشتیبان",
+    "موقعیت": loc,
+    "پشتیبان (مقصد)": supportName
+  });
+
+  doRedirect(dest, finalUrl);
+}
+
+function doRedirect(dest, url){
+  document.getElementById("screen-result").style.display="none";
+  document.getElementById("screen-fallback").style.display="none";
+  const icon=document.getElementById("redirect-icon");
+  const text=document.getElementById("redirect-text");
+  const sub=document.getElementById("redirect-sub");
+  document.getElementById("screen-redirect").style.display="flex";
+  
+  if(dest==="telegram"){
+    icon.className="redirect-icon telegram";icon.textContent="✈️";text.textContent="در حال انتقال به تلگرام...";sub.textContent="لحظه‌ای صبر کن";
+    setTimeout(()=>{window.location.href=url}, 1200);
+  }else{
+    icon.className="redirect-icon whatsapp";icon.textContent="💬";text.textContent="در حال انتقال به واتساپ...";sub.textContent="Just a moment...";
+    setTimeout(()=>{window.location.href=url}, 1200);
+  }
+}
+
+function syncPlaceholder(){
+  const cc=document.getElementById("input-country").value;
+  const rule=PHONE_RULES[cc];
+  document.getElementById("input-phone").placeholder=rule?rule.sample:"+989123456789";
+  document.getElementById("phone-hint").textContent=rule?"شماره را بدون صفر اول وارد کن.":"شماره بین‌المللی کامل وارد کن؛ مثل +989123456789";
+}
+
+document.getElementById("input-country").addEventListener("change",syncPlaceholder);
+document.getElementById("input-phone").addEventListener("input",e=>{
+  e.target.value=toEN(e.target.value);
+  document.getElementById("err-phone").style.display="none";
+  document.getElementById("input-phone").classList.remove("error");
+  document.getElementById("input-country").classList.remove("error");
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"){const sf=document.getElementById("screen-form");if(sf.style.display==="flex")handleSubmit();}});
+syncPlaceholder();
+renderQ();
+</script>
+</body>
+</html>
